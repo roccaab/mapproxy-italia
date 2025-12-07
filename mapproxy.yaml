@@ -16,35 +16,43 @@ services:
 layers:
   - name: catasto_cache
     title: Catasto (Agenzia Entrate) - cache 12h
-    sources: [catasto_cache] # PUNTIAMO ALLA CACHE SINGOLA
+    sources: [catasto_webmercator_cache] # PUNTA ALLA CACHE FINALE (3857)
 
 sources:
   catasto_wms:
-    type: wms
-    req:
-      url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php
-      layers: CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati,codice_plla,Simbolo_graffa
-      transparent: true
-      format: image/png
-    wms_opts:
-      version: 1.1.1 # VERSIONE CONFERMATA DALLA TUA RICHIESTA
-      # FORZA I PARAMETRI WMS MAIUSCOLI PER CONFORMITÀ
-      force_proxy_request_params: true 
-    # Dobbiamo supportare EPSG:3857 (la griglia cache) in modo che MapProxy possa chiederla
-    supported_srs: ['EPSG:6706', 'EPSG:3857'] 
+    type: tile # 👈 CAMBIATO IL TIPO: ORA È UNA SORGENTE DI TILE RIGIDA
+    url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&layers=CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati,codice_plla,Simbolo_graffa&STYLES=&SRS=EPSG:6706&BBOX=%(bbox)s&WIDTH=%(width)s&HEIGHT=%(height)s
+    # Inseriamo i parametri MAIUSCOLI, e MapProxy inserirà BBOX, WIDTH, HEIGHT
+    # Deve usare la griglia 6706 per generare le coordinate
+    grid: EPSG_6706_grid 
     http:
       client_timeout: 180
       headers:
         User-Agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 caches:
-  catasto_cache:
-    grids: [webmercator]
+  # CACHE 1: NATIVA (Acquisizione dal WMS in EPSG:6706)
+  catasto_native_cache:
+    grids: [EPSG_6706_grid]
     sources: [catasto_wms]
     format: image/png
     cache:
       type: file
-      directory: /mapproxy/cache_data/tiles/catasto
+      directory: /mapproxy/cache_data/tiles/catasto_native
+      directory_layout: tms
+    meta_size: [4, 4]
+    meta_buffer: 64
+    refresh_before:
+      hours: 12
+      
+  # CACHE 2: WEBMERCATOR (Distribuzione, riproietta dalla cache nativa)
+  catasto_webmercator_cache:
+    grids: [webmercator]
+    sources: [catasto_native_cache] # PUNTIAMO ALLA CACHE NATIVA
+    format: image/png
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/catasto_mercator
       directory_layout: tms
     meta_size: [2, 2]
     meta_buffer: 64
@@ -52,6 +60,15 @@ caches:
       hours: 12
 
 grids:
+  # GRIGLIA NATIVA (Per acquisire i dati dal WMS)
+  EPSG_6706_grid:
+    base: GLOBAL_GEODETIC
+    srs: 'EPSG:6706'
+    res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175, 0.0000000875] 
+    bbox: [35.5, 6.7, 47.5, 18.5] # Y/X (Lat/Lon)
+    # L'ordine delle coordinate è ora forzato dalla griglia GLOBAL_GEODETIC
+
+  # GRIGLIA WEBMERCATOR (Per servire i tiles)
   webmercator:
     base: GLOBAL_WEBMERCATOR
     origin: nw

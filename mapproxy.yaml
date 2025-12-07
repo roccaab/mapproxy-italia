@@ -16,7 +16,7 @@ services:
 layers:
   - name: catasto_cache
     title: Catasto (Agenzia Entrate) - cache 12h
-    sources: [catasto_cache]
+    sources: [catasto_webmercator_cache] # PUNTA ALLA CACHE CHE USA WEBMERCATOR
 
 sources:
   catasto_wms:
@@ -27,21 +27,36 @@ sources:
       transparent: true
       format: image/png
     wms_opts:
-      version: 1.1.1
-    supported_srs: ['EPSG:6706', 'EPSG:3857']
+      version: 1.1.1 
+    supported_srs: ['EPSG:6706'] # RICHIEDE SOLO IL NATIVO
     http:
       client_timeout: 180
       headers:
         User-Agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 caches:
-  catasto_cache:
-    grids: [webmercator]
+  # CACHE 1: NATIVA (Acquisizione dal WMS in EPSG:6706)
+  catasto_native_cache:
+    grids: [EPSG_6706_grid]
     sources: [catasto_wms]
     format: image/png
     cache:
       type: file
-      directory: /mapproxy/cache_data/tiles/catasto
+      directory: /mapproxy/cache_data/tiles/catasto_native
+      directory_layout: tms
+    meta_size: [4, 4]
+    meta_buffer: 64
+    refresh_before:
+      hours: 12
+      
+  # CACHE 2: WEBMERCATOR (Distribuzione, riproietta dalla cache nativa)
+  catasto_webmercator_cache:
+    grids: [webmercator]
+    sources: [catasto_native_cache] # PUNTIAMO ALLA CACHE NATIVA
+    format: image/png
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/catasto_mercator
       directory_layout: tms
     meta_size: [2, 2]
     meta_buffer: 64
@@ -49,6 +64,15 @@ caches:
       hours: 12
 
 grids:
+  # GRIGLIA NATIVA (Per acquisire i dati dal WMS)
+  EPSG_6706_grid:
+    base: GLOBAL_GEODETIC
+    srs: 'EPSG:6706'
+    # Risoluzioni e BBOX da ottimizzare per l'Italia e la scala 1:2000
+    res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175] 
+    bbox: [6.7, 35.5, 18.5, 47.5] 
+
+  # GRIGLIA WEBMERCATOR (Per servire i tiles)
   webmercator:
     base: GLOBAL_WEBMERCATOR
     origin: nw

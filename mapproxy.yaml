@@ -3,10 +3,10 @@ services:
   tms:
     use_grid_names: true
   wms:
-    image_formats: ['image/png', 'image/jpeg']
+    image_formats: ['image/png']
     md:
-      title: "Catasto Agenzia Entrate via MapProxy (DEF)"
-      abstract: "Proxy + cache del WMS cartografia.agenziaentrate.gov.it - Risolti tutti i problemi noti"
+      title: "Catasto Agenzia Entrate via MapProxy"
+      abstract: "Proxy + cache del WMS cartografia.agenziaentrate.gov.it"
       online_resource: "https://mapproxy-italia.onrender.com/service"
       contact:
         person: "Antonio Rocca"
@@ -19,55 +19,72 @@ layers:
     sources: [catasto_webmercator_cache]
 
 sources:
-  catasto_wms:
-    type: tile
-    # STRINGA WMS PERFETTAMENTE CONFORME AL SERVER CATASTO (Casing MAIUSCOLO, Ordine Layer Esatto, Doppia Trasparenza)
-    url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&layers=CP.CadastralParcel,CP.CadastralZoning,fabbricati,acque,strade,codice_plla,simbolo_graffa&transparent=true&WIDTH=%(width)s&HEIGHT=%(height)s&SRS=EPSG:6706&STYLES=&BBOX=%(bbox)s
-    grid: EPSG_6706_grid 
+  # Fonte WMS originale in EPSG:6706
+  catasto_wms_source:
+    type: wms
+    req:
+      url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php
+      layers: CP.CadastralParcel,CP.CadastralZoning,fabbricati,acque,strade,codice_plla,simbolo_graffa
+      transparent: true
+      version: 1.1.1
+    supported_srs: ['EPSG:6706', 'EPSG:3857', 'EPSG:4326']
+    wms_opts:
+      featureinfo: false
     http:
       client_timeout: 180
       headers:
         User-Agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 caches:
-  # CACHE 1: NATIVA (Acquisizione dal WMS in EPSG:6706)
+  # Cache nativa in EPSG:6706 (acquisizione diretta dal WMS)
   catasto_native_cache:
+    sources: [catasto_wms_source]
     grids: [EPSG_6706_grid]
-    sources: [catasto_wms]
     format: image/png
+    meta_size: [4, 4]
+    meta_buffer: 80
     cache:
       type: file
       directory: /mapproxy/cache_data/tiles/catasto_native
       directory_layout: tms
-    meta_size: [4, 4]
-    meta_buffer: 64
     refresh_before:
       hours: 12
-      
-  # CACHE 2: WEBMERCATOR (Distribuzione, riproietta dalla cache nativa)
+
+  # Cache in Web Mercator per distribuzione veloce (riproiezione dalla cache nativa)
   catasto_webmercator_cache:
-    grids: [webmercator]
     sources: [catasto_native_cache]
+    grids: [webmercator]
     format: image/png
+    meta_size: [4, 4]
+    meta_buffer: 80
     cache:
       type: file
-      directory: /mapproxy/cache_data/tiles/catasto_mercator
+      directory: /mapproxy/cache_data/tiles/catasto_webmercator
       directory_layout: tms
-    meta_size: [2, 2]
-    meta_buffer: 64
     refresh_before:
       hours: 12
 
 grids:
-  # GRIGLIA NATIVA (Per acquisire i dati dal WMS)
   EPSG_6706_grid:
-    base: GLOBAL_GEODETIC
     srs: 'EPSG:6706'
-    res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175, 0.0000000875] 
-    # CORREZIONE BBOX DEFINITIVA: Italia (Lon Min, Lat Min, Lon Max, Lat Max)
-    bbox: [6.7, 35.5, 18.5, 47.5] 
+    origin: nw
+    num_levels: 20
+    bbox: [6.5, 35.0, 18.7, 47.1]   # Italia continentale + Sicilia + Sardegna (in lon/lat)
+    res:
+      - 0.000256
+      - 0.000128
+      - 0.000064
+      - 0.000032
+      - 0.000016
+      - 0.000008
+      - 0.000004
+      - 0.000002
+      - 0.000001
+      - 5.0e-7
+      - 2.5e-7
+      - 1.25e-7
+      - 6.25e-8
 
-  # GRIGLIA WEBMERCATOR (Per servire i tiles)
   webmercator:
     base: GLOBAL_WEBMERCATOR
     origin: nw
@@ -82,4 +99,5 @@ globals:
 
   image:
     resampling_method: bilinear
-    jpeg_quality: 90
+    antialias: true
+    paletted: false   # importante per PNG trasparenti

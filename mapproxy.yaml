@@ -9,6 +9,9 @@ services:
     md:
       title: "Catasto Agenzia Entrate - Particelle + Numeri + Fabbricati"
       abstract: "Proxy con cache per catasto italiano"
+    # Aggiungi endpoint health per Render
+    health:
+      disable: false
 
 layers:
   - name: catasto_completo
@@ -25,87 +28,57 @@ sources:
       transparent: true
       format: image/png
       srs: EPSG:6706
-      # IMPORTANTE: mantenere esattamente quest'ordine dei parametri
-      param_order: ['service', 'version', 'request', 'format', 'transparent', 'layers', 'transparent', 'width', 'height', 'srs', 'styles', 'bbox']
-    # Usa solo le versioni WMS supportate dal server
-    supported_srs: ['EPSG:6706', 'EPSG:3857', 'EPSG:4326']
-    # Forza MapProxy a usare WMS 1.1.1
+      styles: ''
+    supported_srs: ['EPSG:6706']  # IMPORTANTE: usa solo questo SRS
     wms_opts:
       version: 1.1.1
-      featureinfo: false
-    # Specifica che il server richiede l'ordine dei parametri in modo specifico
-    forward_req_params: false
+    coverage:
+      bbox: [10.0, 36.0, 19.0, 48.0]  # Italia
+      srs: 'EPSG:4326'
     http:
-      ssl_no_cert_checks: false
-      client_timeout: 120
+      client_timeout: 60
       retries: 3
       headers:
-        # Headers ESSENZIALI per non essere bloccati
         User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
-        Referer: https://www.agenziaentrate.gov.it/
-        Accept: image/png,image/*;q=0.8
+        Referer: https://www.google.it/
+        Accept: image/png
         Accept-Language: it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7
-        Accept-Encoding: gzip, deflate, br
-        Connection: keep-alive
-        # Aggiungi anche la cache control
-        Cache-Control: no-cache
-        Pragma: no-cache
-    coverage:
-      bbox: [6.0, 36.0, 19.0, 48.0]  # Tutta Italia compresa
-      srs: 'EPSG:4326'
 
 caches:
   catasto_cache:
     sources: [wms_agenzia]
-    grids: [epsg6706_grid, webmercator]
+    grids: [epsg6706_grid]
     cache:
       type: file
-      directory: /mapproxy/cache_data
+      directory: /tmp/mapproxy_cache  # Render usa filesystem temporaneo
       directory_layout: tms
     meta_size: [2, 2]
     meta_buffer: 10
-    # Usa formato PNG con trasparenza
     format: image/png
-    # Refresh più frequente per test
+    # Su Render, la cache è temporanea, quindi refresh breve
     refresh_before:
-      days: 0
-      hours: 6
-    # Gestione errori
-    minimize_meta_requests: true
-    on_error:
-      response: transparent
-      cache: true
+      minutes: 30
 
 grids:
-  webmercator:
-    base: GLOBAL_WEBMERCATOR
-  
-  # Definisci una griglia specifica per EPSG:6706 (RDN2008 / UTM zone 32N)
+  # Griglia specifica per EPSG:6706 (RDN2008 / UTM zone 32N)
   epsg6706_grid:
     srs: 'EPSG:6706'
-    bbox: [6.0, 36.0, 19.0, 48.0]  # Italia in EPSG:4326
+    bbox: [10.0, 36.0, 19.0, 48.0]
     bbox_srs: 'EPSG:4326'
     res: [
       4000.0, 2000.0, 1000.0, 500.0, 250.0, 125.0, 
-      62.5, 31.25, 15.625, 7.8125, 3.90625, 1.953125,
-      0.9765625, 0.48828125, 0.244140625, 0.1220703125
+      62.5, 31.25, 15.625, 7.8125, 3.90625, 1.953125
     ]
     origin: nw
     tile_size: [256, 256]
 
 globals:
   cache:
-    base_dir: /mapproxy/cache_data
-    lock_dir: /mapproxy/cache_data/locks
+    base_dir: /tmp/mapproxy_cache
+    lock_dir: /tmp/mapproxy_cache/locks
   image:
-    # Ottimizza per immagini PNG
     resampling_method: bilinear
-    paletted: false
-    transparent_color_tolerance: 0
     mode: rgba
   http:
-    # Timeout più lunghi
-    client_timeout: 120
-    ssl_no_cert_checks: false
-    pool_size: 20
-    pool_connections: 20
+    client_timeout: 60
+    pool_size: 10

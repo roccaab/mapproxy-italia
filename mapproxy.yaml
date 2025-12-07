@@ -19,18 +19,20 @@ sources:
       url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php
       layers: CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati,vestizioni
       transparent: true
-    supported_srs: ['EPSG:3857']
-    http:
-      client_timeout: 120
+    supported_srs: ['EPSG:6706', 'EPSG:3857', 'EPSG:4326']
 
 grids:
   webmercator:
     srs: EPSG:3857
     origin: nw
+  
+  utm32n:
+    srs: EPSG:6706
+    origin: nw
 
 caches:
   catasto_cache:
-    grids: [webmercator]
+    grids: [webmercator, utm32n]
     sources: [catasto_wms]
     cache:
       type: file
@@ -39,6 +41,7 @@ caches:
     format: image/png
     meta_size: [4, 4]
     meta_buffer: 20
+    request_format: image/png
 
 globals:
   cache:
@@ -46,3 +49,4 @@ globals:
     lock_dir: /mapproxy/cache_data/tile_locks
   image:
     resampling_method: bilinear
+    paletted: false

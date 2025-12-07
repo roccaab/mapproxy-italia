@@ -1,0 +1,88 @@
+services:
+  demo:
+  tms:
+    use_grid_names: true
+  wmts:
+  wms:
+    md:
+      title: MapProxy Italia
+
+layers:
+  - name: catasto
+    title: Catasto Italia
+    sources: [catasto_cache]
+
+sources:
+  catasto_wms:
+    type: wms
+    req:
+      url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php
+      layers: CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati,vestizioni
+      transparent: true
+    supported_srs: ['EPSG:3857']
+    http:
+      client_timeout: 120
+
+grids:
+  webmercator:
+    srs: EPSG:3857
+    origin: nw
+
+caches:
+  catasto_cache:
+    grids: [webmercator]
+    sources: [catasto_wms]
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles
+      directory_layout: tms
+    format: image/png
+    meta_size: [4, 4]
+    meta_buffer: 20
+
+globals:
+  cache:
+    base_dir: /mapproxy/cache_data
+    lock_dir: /mapproxy/cache_data/tile_locks
+  image:
+    resampling_method: bilinear
+  http:
+    ssl_no_cert_checks: false
+```
+
+**Commit**
+
+## Step 3: Deploy su Render
+
+1. **Dashboard Render** → **New +** → **Web Service**
+2. **Connect repository** → Seleziona `mapproxy-italia`
+3. **Configurazione:**
+   - Name: `mapproxy-italia`
+   - Environment: `Docker`
+   - Region: `Frankfurt`
+   - Instance: `Starter ($7)`
+   - Auto-Deploy: `Yes`
+4. **Create Web Service**
+
+**Aspetta ~5 minuti** (guarda Logs)
+
+## Step 4: Aggiungi Persistent Disk
+
+Quando il servizio è **Live**:
+
+1. **Disks** → **Add Disk**
+2. Configurazione:
+   - Name: `mapproxy-cache`
+   - Mount Path: `/mapproxy/cache_data`
+   - Size: `10`
+3. **Save**
+
+Riavvierà automaticamente.
+
+## Step 5: Test
+
+**URL:** `https://mapproxy-italia.onrender.com/demo`
+
+**Tiles QGIS:**
+```
+https://mapproxy-italia.onrender.com/tiles/catasto_cache/webmercator/{z}/{x}/{y}.png

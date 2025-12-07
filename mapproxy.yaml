@@ -5,7 +5,7 @@ services:
   wmts:
   wms:
     md:
-      title: MapProxy Italia
+      title: MapProxy Italia - Catasto
 
 layers:
   - name: catasto
@@ -17,9 +17,15 @@ sources:
     type: wms
     req:
       url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php
-      layers: CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati,vestizioni
+      layers: CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati
       transparent: true
-    supported_srs: ['EPSG:6706', 'EPSG:3857', 'EPSG:4326']
+    wms_opts:
+      version: 1.3.0
+    supported_srs: ['EPSG:6706', 'EPSG:3857']
+    http:
+      client_timeout: 180
+      headers:
+        User-Agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 grids:
   webmercator:
@@ -35,8 +41,10 @@ caches:
       directory: /mapproxy/cache_data/tiles/catasto
       directory_layout: tms
     format: image/png
-    meta_size: [4, 4]
-    meta_buffer: 20
+    meta_size: [2, 2]
+    meta_buffer: 50
+    upscale_tiles: 1
+    concurrent_tile_creators: 2
 
 globals:
   cache:
@@ -44,3 +52,4 @@ globals:
     lock_dir: /mapproxy/cache_data/tile_locks
   image:
     resampling_method: bilinear
+    paletted: false

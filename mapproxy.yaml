@@ -25,23 +25,18 @@ grids:
   webmercator:
     srs: EPSG:3857
     origin: nw
-  
-  utm32n:
-    srs: EPSG:6706
-    origin: nw
 
 caches:
   catasto_cache:
-    grids: [webmercator, utm32n]
+    grids: [webmercator]
     sources: [catasto_wms]
     cache:
       type: file
-      directory: /mapproxy/cache_data/tiles
+      directory: /mapproxy/cache_data/tiles/catasto
       directory_layout: tms
     format: image/png
     meta_size: [4, 4]
     meta_buffer: 20
-    request_format: image/png
 
 globals:
   cache:
@@ -49,4 +44,3 @@ globals:
     lock_dir: /mapproxy/cache_data/tile_locks
   image:
     resampling_method: bilinear
-    paletted: false

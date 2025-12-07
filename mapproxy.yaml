@@ -1,5 +1,5 @@
 services:
-  demo: null # Disabilita il servizio demo, se possibile, per evitare confusione
+  demo: null
   tms:
     use_grid_names: true
   wms:
@@ -23,13 +23,12 @@ sources:
     type: wms
     req:
       url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php
-      # Lista completa dei layer, inclusi i livelli di vestizione (codice_plla e Simbolo_graffa) 
-      layers: CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati,codice_plla,Simbolo_graffa 
+      layers: CP.CadastralZoning,strade,acque,CP.CadastralParcel,fabbricati,codice_plla,Simbolo_graffa
       transparent: true
       format: image/png
     wms_opts:
-      [cite_start]version: 1.1.1 # Versione corretta che ha funzionato nel test 
-    [cite_start]supported_srs: ['EPSG:6706', 'EPSG:3857'] # Supporta il nativo Catasto (6706) e la griglia Web Mercator (3857) 
+      version: 1.1.1
+    supported_srs: ['EPSG:6706', 'EPSG:3857']
     http:
       client_timeout: 180
       headers:

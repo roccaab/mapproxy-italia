@@ -63,23 +63,4 @@ grids:
   EPSG_6706_grid:
     base: GLOBAL_GEODETIC
     srs: 'EPSG:6706'
-    res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175, 0.0000000875] 
-    # CORREZIONE BBOX DEFINITIVA: Italia (Lon Min, Lat Min, Lon Max, Lat Max)
-    bbox: [6.7, 35.5, 18.5, 47.5] 
-
-  # GRIGLIA WEBMERCATOR (Per servire i tiles)
-  webmercator:
-    base: GLOBAL_WEBMERCATOR
-    origin: nw
-
-globals:
-  cache:
-    base_dir: /mapproxy/cache_data
-    lock_dir: /mapproxy/cache_data/tile_locks
-
-  tiles:
-    expires_hours: 12
-
-  image:
-    resampling_method: bilinear
-    jpeg_quality: 90
+    res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175, 0.0000000875]

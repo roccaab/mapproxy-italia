@@ -2,21 +2,10 @@ version: '3.8'
 
 services:
   mapproxy:
-    image: mapproxy/mapproxy:latest
-    container_name: mapproxy-catasto
-    restart: unless-stopped
+    build: .
     ports:
       - "8080:8080"
     volumes:
-      - ./mapproxy:/mapproxy
-      - cache_data:/mapproxy/cache_data
+      - ./cache:/tmp/mapproxy_cache
     environment:
-      - MAPPROXY_SEED_DIR=/mapproxy/seeding
-      - MAPPROXY_CACHE_DIR=/mapproxy/cache_data
-      - MAPPROXY_LOGGING_LOG_FILE=/mapproxy/mapproxy.log
-      - MAPPROXY_PROCESSES=4
-      - MAPPROXY_THREADS=10
-    command: mapproxy serve-develop -b 0.0.0.0:8080 /mapproxy/mapproxy.yaml
-
-volumes:
-  cache_data:
+      - MAPPROXY_LOG_DIR=/tmp

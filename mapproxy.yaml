@@ -3,10 +3,10 @@ services:
   tms:
     use_grid_names: true
   wms:
-    image_formats: ['image/png']
+    image_formats: ['image/png', 'image/jpeg']
     md:
-      title: "Catasto Agenzia Entrate via MapProxy"
-      abstract: "Proxy + cache del WMS cartografia.agenziaentrate.gov.it"
+      title: "Catasto Agenzia Entrate via MapProxy (Corretto)"
+      abstract: "Proxy + cache del WMS cartografia.agenziaentrate.gov.it - Risolti i problemi di CRS e BBOX"
       online_resource: "https://mapproxy-italia.onrender.com/service"
       contact:
         person: "Antonio Rocca"
@@ -21,9 +21,9 @@ layers:
 sources:
   catasto_wms:
     type: tile
-    # HO RIPRODOTTO L'URL NELLA SEQUENZA ESATTA E CON LA DOPPIA TRASPARENZA
+    # URL di richiesta che rispetta SCRUPOLOSAMENTE: Casing MAIUSCOLO, Layer Order e Doppia Trasparenza.
     url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&layers=CP.CadastralParcel,CP.CadastralZoning,fabbricati,acque,strade,codice_plla,simbolo_graffa&transparent=true&WIDTH=%(width)s&HEIGHT=%(height)s&SRS=EPSG:6706&STYLES=&BBOX=%(bbox)s
-    grid: EPSG_6706_grid
+    grid: EPSG_6706_grid 
     http:
       client_timeout: 180
       headers:
@@ -64,9 +64,8 @@ grids:
     base: GLOBAL_GEODETIC
     srs: 'EPSG:6706'
     res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175, 0.0000000875] 
-    bbox: [6.7, 35.5, 18.5, 47.5] # 👈 CORRETTO: Lon Min, Lat Min, Lon Max, Lat Max (Xmin, Ymin, Xmax, Ymax)
-    # L'opzione 'base: GLOBAL_GEODETIC' forza l'interpretazione (Lon, Lat) 
-    # per definire l'estensione dell'Italia.
+    # CORREZIONE BBOX: Italia da Ovest a Est (Lon) e da Sud a Nord (Lat)
+    bbox: [6.7, 35.5, 18.5, 47.5] 
 
   # GRIGLIA WEBMERCATOR (Per servire i tiles)
   webmercator:

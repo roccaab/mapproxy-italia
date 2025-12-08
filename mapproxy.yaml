@@ -1,85 +1,89 @@
 services:
-  demo: null
+  demo:
   tms:
     use_grid_names: true
+  wmts:
   wms:
-    image_formats: ['image/png', 'image/jpeg']
     md:
-      title: "Catasto Agenzia Entrate via MapProxy (Corretto)"
-      abstract: "Proxy + cache del WMS cartografia.agenziaentrate.gov.it - Risolti i problemi di CRS e BBOX"
-      online_resource: "https://mapproxy-italia.onrender.com/service"
-      contact:
-        person: "Antonio Rocca"
-        city: "Italia"
-        country: "IT"
+      title: MapProxy Italia - Catasto
 
 layers:
-  - name: catasto_cache
-    title: Catasto (Agenzia Entrate) - cache 12h
-    sources: [catasto_webmercator_cache]
+  - name: catasto
+    title: Catasto Italia
+    sources: [catasto_cache]
 
 sources:
   catasto_wms:
-    type: tile
-    # URL di richiesta che rispetta SCRUPOLOSAMENTE: Casing MAIUSCOLO, Layer Order e Doppia Trasparenza.
-    url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&layers=CP.CadastralParcel,CP.CadastralZoning,fabbricati,acque,strade,codice_plla,simbolo_graffa&transparent=true&WIDTH=%(width)s&HEIGHT=%(height)s&SRS=EPSG:6706&STYLES=&BBOX=%(bbox)s
-    grid: EPSG_6706_grid 
+    type: wms
+    req:
+      url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php
+      layers: CP.CadastralParcel,CP.CadastralZoning,fabbricati,acque,strade,codice_plla,simbolo_graffa
+      transparent: true
+    wms_opts:
+      version: 1.1.1
+    supported_srs: ['EPSG:6706']
     http:
       client_timeout: 180
       headers:
         User-Agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
-caches:
-  # CACHE 1: NATIVA (Acquisizione dal WMS in EPSG:6706)
-  catasto_native_cache:
-    grids: [EPSG_6706_grid]
-    sources: [catasto_wms]
-    format: image/png
-    cache:
-      type: file
-      directory: /mapproxy/cache_data/tiles/catasto_native
-      directory_layout: tms
-    meta_size: [4, 4]
-    meta_buffer: 64
-    refresh_before:
-      hours: 12
-      
-  # CACHE 2: WEBMERCATOR (Distribuzione, riproietta dalla cache nativa)
-  catasto_webmercator_cache:
-    grids: [webmercator]
-    sources: [catasto_native_cache]
-    format: image/png
-    cache:
-      type: file
-      directory: /mapproxy/cache_data/tiles/catasto_mercator
-      directory_layout: tms
-    meta_size: [2, 2]
-    meta_buffer: 64
-    refresh_before:
-      hours: 12
-
 grids:
-  # GRIGLIA NATIVA (Per acquisire i dati dal WMS)
-  EPSG_6706_grid:
-    base: GLOBAL_GEODETIC
-    srs: 'EPSG:6706'
-    res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175, 0.0000000875] 
-    # CORREZIONE BBOX: Italia da Ovest a Est (Lon) e da Sud a Nord (Lat)
-    bbox: [6.7, 35.5, 18.5, 47.5] 
-
-  # GRIGLIA WEBMERCATOR (Per servire i tiles)
-  webmercator:
-    base: GLOBAL_WEBMERCATOR
+  italygrid:
+    srs: EPSG:6706
+    bbox: [6.5, 35.0, 19.0, 48.0]
     origin: nw
+    res: [
+      0.0087890625,
+      0.00439453125,
+      0.002197265625,
+      0.0010986328125,
+      0.00054931640625,
+      0.000274658203125,
+      0.0001373291015625,
+      0.00006866455078125,
+      0.000034332275390625,
+      0.0000171661376953125,
+      0.00000858306884765625,
+      0.000004291534423828125,
+      0.0000021457672119140625,
+      0.00000107288360595703125,
+      0.000000536441802978515625,
+      0.0000002682209014892578125,
+      0.00000013411045074462890625,
+      0.000000067055225372314453125,
+      0.0000000335276126861572265625
+    ]
+
+  webmercator:
+    srs: EPSG:3857
+    origin: nw
+
+caches:
+  catasto_native:
+    grids: [italygrid]
+    sources: [catasto_wms]
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/native
+      directory_layout: tms
+    format: image/png
+    meta_size: [4, 4]
+    meta_buffer: 20
+
+  catasto_cache:
+    grids: [webmercator]
+    sources: [catasto_native]
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/mercator
+      directory_layout: tms
+    format: image/png
+    meta_size: [2, 2]
+    meta_buffer: 20
 
 globals:
   cache:
     base_dir: /mapproxy/cache_data
     lock_dir: /mapproxy/cache_data/tile_locks
-
-  tiles:
-    expires_hours: 12
-
   image:
     resampling_method: bilinear
-    jpeg_quality: 90

@@ -4,12 +4,24 @@ services:
     use_grid_names: true
   wmts:
   wms:
+    srs: ['EPSG:3857', 'EPSG:4326', 'EPSG:32632', 'EPSG:32633', 'EPSG:6706', 'EPSG:25832', 'EPSG:25833', 'EPSG:3003', 'EPSG:3004']
+    image_formats: ['image/png', 'image/jpeg']
     md:
-      title: MapProxy Italia - Catasto
+      title: MapProxy Italia - Catasto WMS
+      abstract: Servizio WMS della cartografia catastale con supporto multi-CRS
+      online_resource: https://mapproxy-italia.onrender.com
+      contact:
+        person: Antonio Rocca
+        organization: GeoAnalyst
+      access_constraints: CC-BY 4.0 Agenzia delle Entrate
 
 layers:
+  - name: catastoALL
+    title: Catasto Completo (tutti i layer)
+    sources: [catasto_cache]
+  
   - name: catasto
-    title: Catasto Italia
+    title: Catasto Italia (tiles XYZ)
     sources: [catasto_cache]
 
 sources:
@@ -21,9 +33,9 @@ sources:
       transparent: true
     wms_opts:
       version: 1.1.1
-    supported_srs: ['EPSG:6706']
+    supported_srs: ['EPSG:6706', 'EPSG:3857', 'EPSG:4326', 'EPSG:32632', 'EPSG:32633']
     http:
-      client_timeout: 180
+      client_timeout: 300
       headers:
         User-Agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
@@ -57,6 +69,16 @@ grids:
   webmercator:
     srs: EPSG:3857
     origin: nw
+  
+  utm32n:
+    srs: EPSG:32632
+    bbox: [166021, 3950009, 834978, 5481490]
+    origin: nw
+  
+  utm33n:
+    srs: EPSG:32633
+    bbox: [166021, 3950009, 834978, 5481490]
+    origin: nw
 
 caches:
   catasto_native:
@@ -71,7 +93,7 @@ caches:
     meta_buffer: 20
 
   catasto_cache:
-    grids: [webmercator]
+    grids: [webmercator, utm32n, utm33n, italygrid]
     sources: [catasto_native]
     cache:
       type: file
@@ -80,6 +102,8 @@ caches:
     format: image/png
     meta_size: [2, 2]
     meta_buffer: 20
+    min_res: 76.43702828517625
+    max_res: 0.14929107086948124
 
 globals:
   cache:
@@ -87,3 +111,28 @@ globals:
     lock_dir: /mapproxy/cache_data/tile_locks
   image:
     resampling_method: bilinear
+    paletted: false
+```
+
+---
+
+## URLS FINALI
+
+**XYZ Tiles:**
+```
+https://mapproxy-italia.onrender.com/tiles/catasto/webmercator/{z}/{x}/{y}.png
+```
+
+**WMS GetCapabilities:**
+```
+https://mapproxy-italia.onrender.com/service?SERVICE=WMS&REQUEST=GetCapabilities
+```
+
+**WMS GetMap:**
+```
+https://mapproxy-italia.onrender.com/service?SERVICE=WMS&REQUEST=GetMap&LAYERS=catastoALL&SRS=EPSG:3857&BBOX=1530000,5130000,1540000,5140000&WIDTH=800&HEIGHT=800&FORMAT=image/png&TRANSPARENT=true
+```
+
+**Demo:**
+```
+https://mapproxy-italia.onrender.com/demo

@@ -13,10 +13,10 @@ services:
 layers:
   - name: catastoALL
     title: Catasto Completo
-    sources: [catasto_cache]
+    sources: [catasto_webmercator, catasto_italygrid, catasto_utm32n, catasto_utm33n]
   - name: catasto
     title: Catasto Italia
-    sources: [catasto_cache]
+    sources: [catasto_webmercator]
 
 sources:
   catasto_wms:
@@ -65,12 +65,45 @@ caches:
     meta_size: [4, 4]
     meta_buffer: 20
 
-  catasto_cache:
-    grids: [webmercator, italygrid, utm32n, utm33n]
+  catasto_webmercator:
+    grids: [webmercator]
     sources: [catasto_native]
     cache:
       type: file
-      directory: /mapproxy/cache_data/tiles
+      directory: /mapproxy/cache_data/tiles/mercator
+      directory_layout: tms
+    format: image/png
+    meta_size: [2, 2]
+    meta_buffer: 20
+
+  catasto_italygrid:
+    grids: [italygrid]
+    sources: [catasto_native]
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/rdn2008
+      directory_layout: tms
+    format: image/png
+    meta_size: [2, 2]
+    meta_buffer: 20
+
+  catasto_utm32n:
+    grids: [utm32n]
+    sources: [catasto_native]
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/utm32
+      directory_layout: tms
+    format: image/png
+    meta_size: [2, 2]
+    meta_buffer: 20
+
+  catasto_utm33n:
+    grids: [utm33n]
+    sources: [catasto_native]
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/utm33
       directory_layout: tms
     format: image/png
     meta_size: [2, 2]

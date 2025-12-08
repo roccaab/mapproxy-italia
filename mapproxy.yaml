@@ -2,83 +2,84 @@ services:
   demo: null
   tms:
     use_grid_names: true
-    origin: nw
   wms:
-    srs: ['EPSG:6706', 'EPSG:3857', 'EPSG:4326']
-    image_formats: ['image/png']
+    image_formats: ['image/png', 'image/jpeg']
     md:
-      title: "Catasto Agenzia Entrate - Particelle + Numeri + Fabbricati"
-      abstract: "Proxy con cache per catasto italiano"
-    # Aggiungi endpoint health per Render
-    health:
-      disable: false
+      title: "Catasto Agenzia Entrate via MapProxy (DEF)"
+      abstract: "Proxy + cache del WMS cartografia.agenziaentrate.gov.it - Risolti tutti i problemi noti"
+      online_resource: "https://mapproxy-italia.onrender.com/service"
+      contact:
+        person: "Antonio Rocca"
+        city: "Italia"
+        country: "IT"
 
 layers:
-  - name: catasto_completo
-    title: Catasto completo (contorni + fabbricati + numeri)
-    sources: [catasto_cache]
+  - name: catasto_cache
+    title: Catasto (Agenzia Entrate) - cache 12h
+    sources: [catasto_webmercator_cache]
 
 sources:
-  wms_agenzia:
-    type: wms
-    req:
-      url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php?
-      version: 1.1.1
-      layers: CP.CadastralParcel,CP.CadastralZoning,fabbricati,CP.CadastralParcelNumber
-      transparent: true
-      format: image/png
-      srs: EPSG:6706
-      styles: ''
-    supported_srs: ['EPSG:6706']  # IMPORTANTE: usa solo questo SRS
-    wms_opts:
-      version: 1.1.1
-    coverage:
-      bbox: [10.0, 36.0, 19.0, 48.0]  # Italia
-      srs: 'EPSG:4326'
+  catasto_wms:
+    type: tile
+    # STRINGA WMS PERFETTAMENTE CONFORME AL SERVER CATASTO (Casing MAIUSCOLO, Ordine Layer Esatto, Doppia Trasparenza)
+    url: https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&layers=CP.CadastralParcel,CP.CadastralZoning,fabbricati,acque,strade,codice_plla,simbolo_graffa&transparent=true&WIDTH=%(width)s&HEIGHT=%(height)s&SRS=EPSG:6706&STYLES=&BBOX=%(bbox)s
+    grid: EPSG_6706_grid 
     http:
-      client_timeout: 60
-      retries: 3
+      client_timeout: 180
       headers:
-        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
-        Referer: https://www.google.it/
-        Accept: image/png
-        Accept-Language: it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7
+        User-Agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
 
 caches:
-  catasto_cache:
-    sources: [wms_agenzia]
-    grids: [epsg6706_grid]
+  # CACHE 1: NATIVA (Acquisizione dal WMS in EPSG:6706)
+  catasto_native_cache:
+    grids: [EPSG_6706_grid]
+    sources: [catasto_wms]
+    format: image/png
     cache:
       type: file
-      directory: /tmp/mapproxy_cache  # Render usa filesystem temporaneo
+      directory: /mapproxy/cache_data/tiles/catasto_native
+      directory_layout: tms
+    meta_size: [4, 4]
+    meta_buffer: 64
+    refresh_before:
+      hours: 12
+      
+  # CACHE 2: WEBMERCATOR (Distribuzione, riproietta dalla cache nativa)
+  catasto_webmercator_cache:
+    grids: [webmercator]
+    sources: [catasto_native_cache]
+    format: image/png
+    cache:
+      type: file
+      directory: /mapproxy/cache_data/tiles/catasto_mercator
       directory_layout: tms
     meta_size: [2, 2]
-    meta_buffer: 10
-    format: image/png
-    # Su Render, la cache è temporanea, quindi refresh breve
+    meta_buffer: 64
     refresh_before:
-      minutes: 30
+      hours: 12
 
 grids:
-  # Griglia specifica per EPSG:6706 (RDN2008 / UTM zone 32N)
-  epsg6706_grid:
+  # GRIGLIA NATIVA (Per acquisire i dati dal WMS)
+  EPSG_6706_grid:
+    base: GLOBAL_GEODETIC
     srs: 'EPSG:6706'
-    bbox: [10.0, 36.0, 19.0, 48.0]
-    bbox_srs: 'EPSG:4326'
-    res: [
-      4000.0, 2000.0, 1000.0, 500.0, 250.0, 125.0, 
-      62.5, 31.25, 15.625, 7.8125, 3.90625, 1.953125
-    ]
+    res: [0.0000028, 0.0000014, 0.0000007, 0.00000035, 0.000000175, 0.0000000875] 
+    # CORREZIONE BBOX DEFINITIVA: Italia (Lon Min, Lat Min, Lon Max, Lat Max)
+    bbox: [6.7, 35.5, 18.5, 47.5] 
+
+  # GRIGLIA WEBMERCATOR (Per servire i tiles)
+  webmercator:
+    base: GLOBAL_WEBMERCATOR
     origin: nw
-    tile_size: [256, 256]
 
 globals:
   cache:
-    base_dir: /tmp/mapproxy_cache
-    lock_dir: /tmp/mapproxy_cache/locks
+    base_dir: /mapproxy/cache_data
+    lock_dir: /mapproxy/cache_data/tile_locks
+
+  tiles:
+    expires_hours: 12
+
   image:
     resampling_method: bilinear
-    mode: rgba
-  http:
-    client_timeout: 60
-    pool_size: 10
+    jpeg_quality: 90

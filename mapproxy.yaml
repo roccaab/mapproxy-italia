@@ -70,7 +70,7 @@ caches:
     sources: [catasto_native]
     cache:
       type: file
-      directory: /mapproxy/cache_data/tiles/mercator
+      directory: /mapproxy/cache_data/tiles
       directory_layout: tms
     format: image/png
     meta_size: [2, 2]

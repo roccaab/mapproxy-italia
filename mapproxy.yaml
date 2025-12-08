@@ -9,7 +9,6 @@ services:
     md:
       title: MapProxy Italia - Catasto WMS
       abstract: Servizio WMS della cartografia catastale con supporto multi-CRS
-      online_resource: https://mapproxy-italia.onrender.com
 
 layers:
   - name: catastoALL
@@ -39,9 +38,19 @@ grids:
     srs: EPSG:6706
     bbox: [6.5, 35.0, 19.0, 48.0]
     origin: nw
-
+  
   webmercator:
     srs: EPSG:3857
+    origin: nw
+  
+  utm32n:
+    srs: EPSG:32632
+    bbox: [166021, 3950009, 834978, 5481490]
+    origin: nw
+  
+  utm33n:
+    srs: EPSG:32633
+    bbox: [166021, 3950009, 834978, 5481490]
     origin: nw
 
 caches:
@@ -57,7 +66,7 @@ caches:
     meta_buffer: 20
 
   catasto_cache:
-    grids: [webmercator]
+    grids: [webmercator, italygrid, utm32n, utm33n]
     sources: [catasto_native]
     cache:
       type: file

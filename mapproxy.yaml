@@ -10,18 +10,13 @@ services:
       title: MapProxy Italia - Catasto WMS
       abstract: Servizio WMS della cartografia catastale con supporto multi-CRS
       online_resource: https://mapproxy-italia.onrender.com
-      contact:
-        person: Antonio Rocca
-        organization: GeoAnalyst
-      access_constraints: CC-BY 4.0 Agenzia delle Entrate
 
 layers:
   - name: catastoALL
-    title: Catasto Completo (tutti i layer)
+    title: Catasto Completo
     sources: [catasto_cache]
-  
   - name: catasto
-    title: Catasto Italia (tiles XYZ)
+    title: Catasto Italia
     sources: [catasto_cache]
 
 sources:
@@ -33,7 +28,7 @@ sources:
       transparent: true
     wms_opts:
       version: 1.1.1
-    supported_srs: ['EPSG:6706', 'EPSG:3857', 'EPSG:4326', 'EPSG:32632', 'EPSG:32633']
+    supported_srs: ['EPSG:6706']
     http:
       client_timeout: 300
       headers:
@@ -44,40 +39,9 @@ grids:
     srs: EPSG:6706
     bbox: [6.5, 35.0, 19.0, 48.0]
     origin: nw
-    res: [
-      0.0087890625,
-      0.00439453125,
-      0.002197265625,
-      0.0010986328125,
-      0.00054931640625,
-      0.000274658203125,
-      0.0001373291015625,
-      0.00006866455078125,
-      0.000034332275390625,
-      0.0000171661376953125,
-      0.00000858306884765625,
-      0.000004291534423828125,
-      0.0000021457672119140625,
-      0.00000107288360595703125,
-      0.000000536441802978515625,
-      0.0000002682209014892578125,
-      0.00000013411045074462890625,
-      0.000000067055225372314453125,
-      0.0000000335276126861572265625
-    ]
 
   webmercator:
     srs: EPSG:3857
-    origin: nw
-  
-  utm32n:
-    srs: EPSG:32632
-    bbox: [166021, 3950009, 834978, 5481490]
-    origin: nw
-  
-  utm33n:
-    srs: EPSG:32633
-    bbox: [166021, 3950009, 834978, 5481490]
     origin: nw
 
 caches:
@@ -93,7 +57,7 @@ caches:
     meta_buffer: 20
 
   catasto_cache:
-    grids: [webmercator, utm32n, utm33n, italygrid]
+    grids: [webmercator]
     sources: [catasto_native]
     cache:
       type: file
@@ -102,8 +66,6 @@ caches:
     format: image/png
     meta_size: [2, 2]
     meta_buffer: 20
-    min_res: 76.43702828517625
-    max_res: 0.14929107086948124
 
 globals:
   cache:
@@ -111,28 +73,3 @@ globals:
     lock_dir: /mapproxy/cache_data/tile_locks
   image:
     resampling_method: bilinear
-    paletted: false
-```
-
----
-
-## URLS FINALI
-
-**XYZ Tiles:**
-```
-https://mapproxy-italia.onrender.com/tiles/catasto/webmercator/{z}/{x}/{y}.png
-```
-
-**WMS GetCapabilities:**
-```
-https://mapproxy-italia.onrender.com/service?SERVICE=WMS&REQUEST=GetCapabilities
-```
-
-**WMS GetMap:**
-```
-https://mapproxy-italia.onrender.com/service?SERVICE=WMS&REQUEST=GetMap&LAYERS=catastoALL&SRS=EPSG:3857&BBOX=1530000,5130000,1540000,5140000&WIDTH=800&HEIGHT=800&FORMAT=image/png&TRANSPARENT=true
-```
-
-**Demo:**
-```
-https://mapproxy-italia.onrender.com/demo
